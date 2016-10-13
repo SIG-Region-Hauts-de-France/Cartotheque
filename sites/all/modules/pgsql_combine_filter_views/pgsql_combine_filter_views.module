@@ -1,0 +1,8 @@
+<?php
+
+function pgsql_combine_filter_views_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'pgsql_combine_filter_views') . '/includes',
+  );
+}

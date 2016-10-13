@@ -1,0 +1,19 @@
+<?php
+
+function content_types_command_form_alter($form, $form_state, $form_id) {
+    if($form_id == 'bundle_copy_export' && $form_state['step'] == 3) {   
+		if(strpos($form['#action'], 'types'))
+			$file_name = 'export_types.txt';
+		else if(strpos($form['#action'], 'taxonomy'))
+			$file_name = 'export_taxonomy.txt';
+
+		$data = $form['export']['#value'];
+		$module_path = drupal_get_path('module', 'content_types_command') . '/var';
+		$file_path = $module_path . '/' . $file_name;
+
+		if($file = file_put_contents($file_path, $data))
+			drupal_set_message(t('Le fichier ' . $file_name . ' a été crée'));
+		else
+			drupal_set_message(t('Erreur à la création du fichier ' . $file_name), 'error');
+	}
+}

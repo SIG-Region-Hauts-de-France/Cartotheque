@@ -1,0 +1,6 @@
+name = PostgresSQL Combine Filter Views
+description = A filter that allow case insensitive and unaccent searches for postgres db on multiple fields.
+core = 7.x
+package = Views
+dependencies[] = views
+files[] = includes/pgsql_combine_filter_views_handler.inc

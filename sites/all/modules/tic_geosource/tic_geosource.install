@@ -1,0 +1,101 @@
+<?php
+/**
+ * Implements hook_install
+ */
+
+/**
+ * Implements hook_install()
+ *
+ * Charge les types carte et contact exportés par bundle_copy
+ */
+function tic_geosource_install() {
+	// Init bbox settings
+	$europeBbox = Array(
+		'west' => '-13',
+		'east' => '33',
+		'north' => '57',
+		'south' => '36',
+	);
+	
+	$franceBbox = Array(
+		'west' => '-6',
+		'east' => '9',
+		'north' => '51',
+		'south' => '42',
+	);
+	
+	$regionBbox = array(
+		'west' => '1',
+		'east' => '5',
+		'north' => '51',
+		'south' => '49',
+	);
+	
+	$depBbox = array(
+		'west' => '1',
+		'east' => '5',
+		'north' => '51',
+		'south' => '49',
+	);
+	
+	$infradepBbox = array(
+		'west' => '1',
+		'east' => '5',
+		'north' => '51',
+		'south' => '49',
+	);
+	
+	$bbox['Europe'] = $europeBbox;
+	$bbox['France'] = $franceBbox;
+	$bbox['Région'] = $regionBbox;
+	$bbox['Département'] = $depBbox;
+	$bbox['Infra-départemental'] = $infradepBbox;
+	
+	variable_set('tic_geosource_bbox', $bbox);
+	
+	// fixtures import requires bundle copy
+	if(!module_exists('bundle_copy')) {
+		return;
+	}
+	
+	if(!file_exists(dirname(__FILE__) . '/fixtures/export_taxonomy.txt')) {
+		drupal_set_message('Le fichier de fixtures n\'a pas pu etre trouvé', 'error');
+		return;
+	}
+	
+	// Load the fixtures file
+	if(!file_exists(dirname(__FILE__) . '/fixtures/export_types.txt')) {
+		drupal_set_message('Le fichier de fixtures n\' a pas pu etre trouvé', 'error');
+		return;
+	}
+	
+	$ctypes = file_get_contents( dirname(__FILE__) . '/fixtures/export_types.txt' );
+	$taxo = file_get_contents( dirname(__FILE__) . '/fixtures/export_taxonomy.txt' );
+	
+	// First import taxonomy
+	$form_state = Array();
+	$form_state['values']['macro'] = $taxo;
+	$form_state['values']['type'] = 'taxonomy_term';
+	$form_state['values']['op'] = t('Import');
+	drupal_form_submit('bundle_copy_import', $form_state);
+	
+	// Import fixtures via bundle copy
+	$form_state = Array();
+	$form_state['values']['macro'] = $ctypes;
+	$form_state['values']['type'] = 'node';
+	$form_state['values']['op'] = t('Import');
+	
+	drupal_form_submit('bundle_copy_import', $form_state);
+	drupal_set_message('Les fixtures ont été installées avec succès', 'status');
+}
+
+/**
+ * Implements hook_uninstall
+ */
+function tic_geosource_uninstall() {
+	variable_del('geosource_server_url');
+	variable_del('geosource_server_user');
+	variable_del('geosource_server_password');
+	variable_del('tic_geosource_bbox');
+	variable_del('geosource_server_timeout');
+}

@@ -1,0 +1,72 @@
+<?php
+
+/**
+ * @file
+ * Contains install for PostgresSQL Combine Filter Views.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+
+function pgsql_combine_filter_views_requirements($phase) {
+	// Requirements to install the PostgresSQL Combine Filter Views module.
+
+	$requirements = array();
+	
+	// Ensure translations don't break during installation.
+	$t = get_t();
+
+	if ($phase == 'install' || $phase == 'runtime') {
+
+		$db_system = Database::getConnection()->driver();
+		$db_version = Database::getConnection()->version();
+
+		// Test database system.
+		if ($db_system == 'pgsql' && version_compare($db_version, '9.1', '>=')) {
+			 
+			$unaccent_available = empty(db_query("SELECT name FROM {pg_available_extensions} WHERE name = 'unaccent'")->fetchCol()) ? FALSE : TRUE;
+			$unaccent_extension = empty(db_query("SELECT extname FROM {pg_extension} WHERE extname = 'unaccent'")->fetchCol()) ? FALSE : TRUE;
+
+			$requirements['unaccent_extension'] = array(
+					'title' => $t('PostgreSQL unaccent extension'),
+			);
+
+			// Test unaccent extension.
+			if ($unaccent_available) {
+				$requirements['unaccent_extension'] += array(
+					'value' => $t('Installed'),
+					'severity' => REQUIREMENT_OK,
+				);
+				if ($unaccent_extension == FALSE) {
+					db_query("CREATE EXTENSION unaccent");
+				}
+			}
+			else {
+				$requirements['unaccent_extension'] += array(
+					'description' => $t('The unaccent extension for postgres is not installed and not available, please visit: http://www.postgresql.org/docs/9.1/static/contrib.html.'),
+					'severity' => REQUIREMENT_ERROR,
+				);
+			}
+		}
+		else {
+			$requirements['db_system'] = array(
+				'title' => $t('Database system'),
+				'description' => $t('Your database system installation is not compatible with this module. Views Search requires Postgres database at least 9.1 version.'),
+				'severity' => REQUIREMENT_ERROR,
+			);
+		}
+	}
+
+	return $requirements;
+}
+
+function pgsql_combine_filter_views_uninstall() {
+	// Disable the unaccent extension when the modules is uninstalled.
+	
+	$unaccent_extension = empty(db_query("SELECT extname FROM {pg_extension} WHERE extname = 'unaccent'")->fetchCol()) ? FALSE : TRUE;
+	
+	if ($unaccent_extension){
+		db_query("DROP EXTENSION unaccent");
+	}
+}

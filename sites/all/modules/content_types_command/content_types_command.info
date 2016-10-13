@@ -1,0 +1,7 @@
+name = Content types export / import command
+description = Exporter ou importer des types de contenus
+package = Development
+dependencies[] = bundle_copy
+core = 7.x
+version = 7.x-1.0
+tags[] = developer
