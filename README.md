@@ -1,2 +1,2 @@
 # Cartotheque
-Cartothèque Hauts-de-Frances
+Cartothèque Hauts-de-France
