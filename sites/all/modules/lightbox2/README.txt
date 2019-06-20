@@ -52,9 +52,9 @@ less likely to conflict with anything else.
 INSTALLATION
 ------------
 1. Copy lightbox2 folder to modules directory.
-2. At admin/build/modules enable the lightbox2 module.
-3. Enable permissions at admin/user/permissions.
-4. Configure the module at admin/settings/lightbox2.
+2. At admin/modules enable the lightbox2 module.
+3. Enable permissions at admin/people/permissions.
+4. Configure the module at admin/config/user-interface/lightbox2.
 5. Modify your image links to open in a lightbox where necessary, see "Adding
    Lightbox Functionality to your Images' section below.
 6. If you need to play flv files, then you may need to install a FLV player.

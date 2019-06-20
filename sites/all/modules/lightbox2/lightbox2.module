@@ -708,11 +708,11 @@ function lightbox2_add_files() {
     'force_show_nav' => variable_get('lightbox2_force_show_nav', FALSE),
     'show_caption' => variable_get('lightbox2_show_caption', TRUE),
     'loop_items' => variable_get('lightbox2_loop_items', FALSE),
-    'node_link_text' => check_plain(variable_get('lightbox2_node_link_text', 'View Image Details')),
+    'node_link_text' => check_plain(t(variable_get('lightbox2_node_link_text', 'View Image Details'))),
     'node_link_target' => variable_get('lightbox2_node_link_target', FALSE),
-    'image_count' => check_plain(variable_get('lightbox2_image_count_str', 'Image !current of !total')),
-    'video_count' => check_plain(variable_get('lightbox2_video_count_str', 'Video !current of !total')),
-    'page_count' => check_plain(variable_get('lightbox2_page_count_str', 'Page !current of !total')),
+    'image_count' => check_plain(t(variable_get('lightbox2_image_count_str', 'Image !current of !total'))),
+    'video_count' => check_plain(t(variable_get('lightbox2_video_count_str', 'Video !current of !total'))),
+    'page_count' => check_plain(t(variable_get('lightbox2_page_count_str', 'Page !current of !total'))),
     'lite_press_x_close' => t('press !x to close', array('!x' => '<a href="#" onclick="hideLightbox(); return FALSE;"><kbd>x</kbd></a>')),
     'download_link_text' => '',
     'enable_login' => $enable_login,
@@ -749,6 +749,7 @@ function lightbox2_add_files() {
     'iframe_border' => (int)variable_get('lightbox2_frame_border', 1),
     // Video settings.
     'enable_video' => $enable_video,
+    'useragent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '',
   );
   if ($enable_video) {
     $js_settings['flvPlayer'] = url(check_plain(trim(variable_get('lightbox2_flv_player_path', 'flvplayer.swf'), '/')));
@@ -757,7 +758,7 @@ function lightbox2_add_files() {
 
   // Only supply these if the user has the correct permissions.
   if (user_access('download original image') && user_access('view original images')) {
-    $js_settings['download_link_text'] = check_plain(variable_get('lightbox2_download_link_text', 'Download Original'));
+    $js_settings['download_link_text'] = check_plain(t(variable_get('lightbox2_download_link_text', 'Download Original')));
   }
 
   drupal_add_js(array('lightbox2' => $js_settings), array( 'type' => 'setting' ) );
@@ -786,7 +787,7 @@ function lightbox2_add_files() {
     }
     //drupal_add_js($path .'/js/prototype.js', array( 'scope' => $js_location, 'cache' => false ) );
     //drupal_add_js($path .'/js/scriptaculous.js', array( 'scope' => $js_location, 'cache' => false ) );
-    drupal_add_js($path . '/js/lightbox.js', array( 'scope' => $js_location , 'cache' => FALSE) );
+    drupal_add_js($path . '/js/lightbox.js', array( 'scope' => $js_location));
 
   }
   // Lightbox Lite.
@@ -795,6 +796,112 @@ function lightbox2_add_files() {
     drupal_add_css($css);
     drupal_add_js($path . '/js/lightbox_lite.js', array( 'scope' => $js_location ) );
   }
+}
+
+/**
+ * Helper function for image styles.
+ */
+function lightbox2_image_styles() {
+  $image_styles=array('0'=>'original');
+  $tmp=image_styles();
+  foreach($tmp as $style) {
+    $image_styles[$style['name']] = $style['name'];
+  }
+  return $image_styles;
+}
+
+/**
+ * Helper function for possible fields to display as the caption.
+ */
+function lightbox2_image_fields() {
+  $fields = array(
+    'hidden' => t('Hidden'),
+    'title' => t('File title'),
+    'filename' => t('Filename'),
+  );
+  foreach(field_info_instances("file", "image") as $field) {
+    $fields[$field['field_name']] = $field['label'];
+  }
+  return $fields;
+}
+
+/**
+ * Helper function for possible lightbox styles.
+ */
+function lightbox2_lightbox_types() {
+    return array(
+      'lightbox' => t('Single lightbox'),
+      'lightshow' => t('Lightshow'),
+    );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function lightbox2_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $form = array();
+
+  $form['type'] = array(
+    '#title' => t('Lightbox type'),
+    '#type' => 'select',
+    '#options' => lightbox2_lightbox_types(),
+    '#default_value' => $settings['type'],
+  );
+  $form['image_style'] = array(
+    '#title' => t('Image style'),
+    '#description' => t('The thumbnail to display as a link for the lightbox.'),
+    '#type' => 'select',
+    '#options' => lightbox2_image_styles(),
+    '#default_value' => $settings['image_style'],
+  );
+  $form['lightbox_style'] = array(
+    '#title' => t('Lightbox style'),
+    '#description' => t('The image style to show inside the lightbox.'),
+    '#type' => 'select',
+    '#options' => lightbox2_image_styles(),
+    '#default_value' => $settings['lightbox_style'],
+  );
+
+  $form['caption'] = array(
+    '#title' => t('Caption field'),
+    '#description' => t('The field to use as a caption.'),
+    '#type' => 'select',
+    '#options' => lightbox2_image_fields(),
+    '#default_value' => $settings['caption'],
+  );
+
+  return $form;
+}
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function lightbox2_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $image_styles = lightbox2_image_styles();
+  $fields = lightbox2_image_fields();
+  $types = lightbox2_lightbox_types();
+
+  $summary = '';
+
+  if(isset($settings['caption']) && isset($settings['type']) && isset($settings['image_style']) && isset($settings['lightbox_style'])) {
+    $summary .= '<strong>'.t('Caption field') . '</strong>: ' . $fields[$settings['caption']] . '<br/>';
+    $summary .= '<strong>'.t('Display') . '</strong>: ' ;
+    $summary .= $types[$settings['type']];
+    $summary .= ': ';
+    $summary .= $image_styles[$settings['image_style']];
+    $summary .= ' => ';
+    $summary .= $image_styles[$settings['lightbox_style']];
+  } else {
+    $summary = 'Title - Lightbox: original => original';
+  }
+
+
+  return $summary;
 }
 
 /**
@@ -807,22 +914,16 @@ function lightbox2_add_files() {
 function lightbox2_field_formatter_info() {
   $formatters = array();
   if (module_exists('image')) {
-    $image = $lightbox = image_styles();
-    $types = array('lightbox', 'lightshow');
-    foreach ($types as $type) {
-      foreach ($image as $image_key => $image_value ) {
-        $formatters['lightbox2__' . $type . '__' . $image_key . '__original'] = array(
-          'label' => 'Lightbox2: ' . $type . ': ' . $image_key . '->original',
-          'field types' => array('image'),
-        );
-        foreach ($lightbox as $lightbox_key => $lightbox_value ) {
-          $formatters['lightbox2__' . $type . '__' . $image_key . "__" . $lightbox_key] = array(
-            'label' => 'Lightbox2: ' . $type . ': ' . $image_key . '->' . $lightbox_key,
-            'field types' => array('image'),
-          );
-        }
-      }
-    }
+    $formatters['lightbox2'] = array(
+      'label' => 'Lightbox2',
+      'field types' => array('image'),
+      'settings' => array(
+          'type' => 'lightbox',
+          'image_style' => 'original',
+          'lightbox_style' => 'original',
+          'caption' => 'hidden',
+      ),
+    );
   }
   return $formatters;
   /*
@@ -946,10 +1047,10 @@ function lightbox2_field_formatter_info() {
  */
 function lightbox2_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
-  $pieces = explode('__', $display['type']);
-  $lightbox_type = $pieces[1];
-  $image_style = $pieces[2];
-  $lightbox_style = $pieces[3];
+  $settings = $display["settings"];
+  $lightbox_type = $settings['type'];
+  $image_style = $settings['image_style'];
+  $lightbox_style = $settings['lightbox_style'];
 
   if ($image_style == 'original') {
     $image_style = NULL;
@@ -958,9 +1059,7 @@ function lightbox2_field_formatter_view($entity_type, $entity, $field, $instance
     $lightbox_style = NULL;
   }
 
-  if ($entity_type == 'node') {
-    $node_id = $entity->nid;
-  }
+  $wrapper = entity_metadata_wrapper($entity_type, $entity);
 
   foreach ($items as $delta => $item) {
     $uri = array(
@@ -974,8 +1073,9 @@ function lightbox2_field_formatter_view($entity_type, $entity, $field, $instance
       '#image_style' => $image_style,
       '#lightbox_style' => $lightbox_style,
       '#path' => $uri,
-      '#node_id' => $node_id,
+      '#node_id' => $wrapper->getIdentifier(),
       '#field_name' => $field['field_name'],
+      '#caption' => $settings['caption'],
     );
   }
   return ($element);
@@ -1026,6 +1126,7 @@ function lightbox2_theme($existing, $type, $theme, $path) {
       'lightbox_style' => NULL,
       'node_id' => NULL,
       'field_name' => NULL,
+      'caption' => NULL,
      ),
     //'variables' => array(),
   );
@@ -1309,12 +1410,12 @@ function lightbox2_file_formatter_info() {
   return array(
     'lightbox2_iframe' => array(
       'suitability callback' => 'lightbox2_check_filefield_extension',
-      'title' => t('Lightbox2 iframe'),
+      'label' => t('Lightbox2 iframe'),
       'description' => t('Displays all kinds of files in a popup lightbox in an iframe.'),
     ),
     'lightbox2_image' => array(
       'suitability callback' => 'lightbox2_check_filefield_image_extension',
-      'title' => t('Lightbox2 image'),
+      'label' => t('Lightbox2 image'),
       'description' => t('Displays image files in a popup lightbox.'),
     ),
   );

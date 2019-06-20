@@ -4,3 +4,13 @@ sites/*/settings*.php
 # Ignore paths that contain user-generated content.
 sites/*/files
 sites/*/private
+
+# Security :
+# No .sql files :
+*.sql
+
+# Drush
+drush.phar
+
+# SVN
+.svn*
